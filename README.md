@@ -1,93 +1,78 @@
 # BandedDrift
 
+Michael Bird and David Patterson
 
 
-## Getting started
+## Purpose
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Explore the possibility of using existing regulatory drift curves to create new
+curves based off banded pesticide applications. This idea is potentially of use
+to precision agriculture.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Motiviating Idea
 
-## Add your files
+Imagine a ditch that is one meter downwind of a field of wheat. For now, assume
+the field is long and wide and that the water body runs along the entire edge of
+the field.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+If a boom sprayer sprays up to the edge of the wheeat, we can uese FOCUS SW 
+drift curves to calculate:
 
-```
-cd existing_repo
-git remote add origin https://gitlab.com/syngentagroup/efate-modelling-projects/research/bandeddrift.git
-git branch -M main
-git push -uf origin main
-```
+  - The deposition curve over the ditch
+  - The total deposition in the water body assuming we know the ditch width and
+    the PPP application rate
 
-## Integrate with your tools
+If a boom sprayer moved itself 1m into the field (i.e) a 1m crop buffer, we 
+could similarly calculate deposition curve. The idea is that if you subtracted
+the 1m curve from the edge of field curve, you would be left with the drift that
+resulted from spraying the 1m wide strip from field edge into the field.
 
-- [ ] [Set up project integrations](https://gitlab.com/syngentagroup/efate-modelling-projects/research/bandeddrift/-/settings/integrations)
+There is the potential to use this idea to refine drift depositions for banded 
+applications where bands run parallel to the ditch
 
-## Collaborate with your team
+## Assumptions
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+ - That it's possible to accurately spray a band of a desired width (this 
+   ignores the realities of nozzle distribution over the boom)
+ - That the drift resulting from a given band is equal to the drift from a full
+   field application minus the drift from a full field applications offset by the 
+   band width. 
+ - That the drift curve from a non-edge-of-field band will be equivalent to the 
+   drift curve from an edge-of-field band. This will not be true as drift from 
+   inner bands (especially from vertical crops) will have additional canopy 
+   effects, reducing drift. This means this assumption is a conservative one for
+   RA
+   
 
-## Test and Deploy
 
-Use the built-in continuous integration in GitLab.
+## Todo
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+  - Implement R functions that allow for calculating deposition curves aligning
+    with FOCUS SW.
 
-***
 
-# Editing this README
+## Priorities
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Priority 1 
 
-## Suggestions for a good README
+plot all combination all combinations of row/inter from 50cm to 3m at inc of
+~20cm contour plot (or something sensible) for
+- no spray buffer
+- then maybe buffers like focus?
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Done, see `plotting.R` script
 
-## Name
-Choose a self-explaining name for your project.
+### Priority 2 
+ All Crops and Numapps
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Prioirty 3 
+ Usability for GUI, bake in focus assumptions on dimensions etc
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### Think about 
+  - "I have a map of treatments for square field, how would you translate that to 
+     this methodology"
+  - "parallel vs perpendicular"
+  - regular spot "grid" take percentage of vertical band for what percent of 
+  vertical band is treated
+  - irregular spot, discretise the field into 1cm vertical band then scale
+  down drift based of % of col treated
