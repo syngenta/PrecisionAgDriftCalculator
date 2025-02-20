@@ -75,17 +75,17 @@ single_banded_drift_dep <- function(
 #' @export
 #'
 #' @examples
-#' #broadcast app, whole field
+#' # broadcast app, whole field
 #' mean_drift_dep()
 #' # 1m spray, 1m no spray in 1000m deep field, ~64% of drift from broadcast app
 #' multi_banded_drift_dep()
-#' #reduce size of spray band (decrease drift) ~45% of drift from broadcast app
+#' # reduce size of spray band (decrease drift) ~45% of drift from broadcast app
 #' multi_banded_drift_dep(band_width = 0.5)
-#' #reduce sizr of 'no spray' band (increase drift), ~76%
+#' # reduce sizr of 'no spray' band (increase drift), ~76%
 #' multi_banded_drift_dep(inter_band_width = 0.5)
-#' #add in a 5m no spray buffer around crops before starting banded app ~53%
-#' mean_drift_dep(z_1 = 5+1,z_2 = 5+2)
-#' multi_banded_drift_dep(z_1 = 5+1,z_2 = 5+2)
+#' # add in a 5m no spray buffer around crops before starting banded app ~53%
+#' mean_drift_dep(z_1 = 5 + 1, z_2 = 5 + 2)
+#' multi_banded_drift_dep(z_1 = 5 + 1, z_2 = 5 + 2)
 multi_banded_drift_dep <- function(band_width = 1,
                                    inter_band_width = 1,
                                    upper_limit_field_size = 1000,
@@ -93,7 +93,6 @@ multi_banded_drift_dep <- function(band_width = 1,
                                    z_2 = 2,
                                    A = 2.7593,
                                    B = -0.9778) {
-
   # Because R is vectorised, we can do this in a single call to
   # `single_banded_drift_dep()`
   # the magic here is that we pass z_1 and z_2 vectors. The values in this vectors
@@ -114,7 +113,7 @@ multi_banded_drift_dep <- function(band_width = 1,
   ) |> sum()
 }
 
-multi_banded_drift_dep <- Vectorize(multi_banded_drift_dep,vectorize.args = c("band_width","inter_band_width"))
+multi_banded_drift_dep <- Vectorize(multi_banded_drift_dep, vectorize.args = c("band_width", "inter_band_width"))
 
 
 
@@ -134,8 +133,6 @@ multi_banded_drift_dep <- Vectorize(multi_banded_drift_dep,vectorize.args = c("b
 #'
 #' @examples
 plot_field <- function(band_width = 1, inter_band_width = 1, z_1 = 1, z_2 = 2, field_width = 20) {
-
-
   ditch_position <-
     tibble::tibble(xmin = z_1, xmax = z_2, ymin = 0, ymax = 1)
 
@@ -152,8 +149,16 @@ plot_field <- function(band_width = 1, inter_band_width = 1, z_1 = 1, z_2 = 2, f
 
   ggplot2::ggplot() +
     ggplot2::theme_void() +
-    ggplot2::geom_rect(data = field_position, ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "sienna", col = "sienna") +
-    ggplot2::geom_rect(data = ditch_position, ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "turquoise4", col = "turquoise3") +
-    ggplot2::geom_rect(data = band_positions, ggplot2::aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax), fill = "seagreen", col = "darkgreen")
+    ggplot2::geom_rect(data = field_position,
+                       ggplot2::aes(xmin = xmin, xmax = xmax,
+                                    ymin = ymin, ymax = ymax),
+                       fill = "sienna", col = "sienna") +
+    ggplot2::geom_rect(data = ditch_position,
+                       ggplot2::aes(xmin = xmin, xmax = xmax,
+                                    ymin = ymin, ymax = ymax),
+                       fill = "turquoise4", col = "turquoise3") +
+    ggplot2::geom_rect(data = band_positions,
+                       ggplot2::aes(xmin = xmin, xmax = xmax,
+                                    ymin = ymin, ymax = ymax),
+                       fill = "seagreen", col = "darkgreen")
 }
-
