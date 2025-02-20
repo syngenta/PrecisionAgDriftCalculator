@@ -1,25 +1,43 @@
-perc_drift <- function(z, A = 2.7593, B = -0.9778) {
-  A * z^B
+perc_drift <- function(z, params) {
+  stopifnot("focussw_drift" %in% class(params))
+  with(params, {
+    if_else(z = H,
+      true = A * z^B,
+      false = C * z^D
+    )
+  })
 }
 
 #' mean_drift_dep
 #'
-#' Calculate mean drift deposition over a water body. This is Equation 5 of
-#' focus sw (page 128, section 5.4.5). Values for A, B can be found in Appendix
-#' B for focus sw. Default values are arable crop 1 app
+#' Calculate mean drift deposition over a water body. This is Equation 4 and 5 of
+#' focus sw (page 128, section 5.4.5).
 #'
 #' @param z_1 distance (m) from crop edge to near side of water body.
 #' @param z_2 distance (m) from crop edge to far side of water body.
-#' @param A Constant regression factor
-#' @param B Exponential regression factor
+#' @param params output of get_params()
 #'
 #' @returns mean deposition (% of application)
 #'
 #' @examples
-mean_drift_dep <- function(z_1 = 1, z_2 = 2, A = 2.7593, B = -0.9778) {
-  (A / (
-    (z_2 - z_1) * (B + 1)
-  )) * (z_2^(B + 1) - z_1^(B + 1))
+mean_drift_dep <- function(z_1 = 1, z_2 = 2, params = get_params()) {
+  stopifnot("focussw_drift" %in% class(params))
+  with(params, {
+    if (between(H, z_1, z_2)) {
+      (
+        ((H^(B + 1) - z_1^(B + 1)) * A / (B + 1)) +
+          ((z_2^(D + 1) - H^(D + 1)) * C / (D + 1))
+      ) / (z_2 - z_1)
+    } else if (H < z_1) {
+      (C / (
+        (z_2 - z_1) * (D + 1)
+      )) * (z_2^(D + 1) - z_1^(D + 1))
+    } else {
+      (A / (
+        (z_2 - z_1) * (B + 1)
+      )) * (z_2^(B + 1) - z_1^(B + 1))
+    }
+  })
 }
 
 
@@ -34,8 +52,7 @@ mean_drift_dep <- function(z_1 = 1, z_2 = 2, A = 2.7593, B = -0.9778) {
 #' @param band_width Width(m) of single band where PPP is applied (parallel to ditch)
 #' @param z_1 Distance (m) from edge of field to near side of water body
 #' @param z_2 Distance (m) from edge of field to far side of water body
-#' @param A Constant regression factor
-#' @param B Exponential regression factor
+#' @param params output of get_params()
 #'
 #' @returns average drift deposition (% of application) over water body
 #' @examples
@@ -50,12 +67,11 @@ single_banded_drift_dep <- function(
     band_width = 1,
     z_1 = 1,
     z_2 = 2,
-    A = 2.7593,
-    B = -0.9778) {
-  mean_drift_dep(z_1 = z_1, z_2 = z_2, A = A, B = B) -
-    mean_drift_dep(z_1 = z_1 + band_width, z_2 = z_2 + band_width, A = A, B = B)
+    params = get_params()) {
+  mean_drift_dep(z_1 = z_1, z_2 = z_2, params = params) -
+    mean_drift_dep(z_1 = z_1 + band_width, z_2 = z_2 + band_width, params = params)
 }
-
+single_banded_drift_dep <- Vectorize(single_banded_drift_dep, vectorize.args = c("z_1", "z_2"))
 
 #' multi_banded_drift_dep
 #'
@@ -68,8 +84,7 @@ single_banded_drift_dep <- function(
 #' @param upper_limit_field_size Depth (m) of field, keep high (1000m)
 #' @param z_1 Distance (m) from edge of field to near side of water body
 #' @param z_2 Distance (m) from edge of field to far side of water body
-#' @param A Constant regression factor
-#' @param B Exponential regression factor
+#' @param params output of get_params()
 #'
 #' @returns average drift deposition (% of application) over water body
 #' @export
@@ -91,8 +106,7 @@ multi_banded_drift_dep <- function(band_width = 1,
                                    upper_limit_field_size = 1000,
                                    z_1 = 1,
                                    z_2 = 2,
-                                   A = 2.7593,
-                                   B = -0.9778) {
+                                   params = get_params()) {
   # Because R is vectorised, we can do this in a single call to
   # `single_banded_drift_dep()`
   # the magic here is that we pass z_1 and z_2 vectors. The values in this vectors
@@ -108,14 +122,11 @@ multi_banded_drift_dep <- function(band_width = 1,
     band_width = band_width,
     z_1 = z_1 + (seq_len(num_bands) - 1) * (band_width + inter_band_width),
     z_2 = z_2 + (seq_len(num_bands) - 1) * (band_width + inter_band_width),
-    A = A,
-    B = B
+    params = params
   ) |> sum()
 }
 
-multi_banded_drift_dep <- Vectorize(multi_banded_drift_dep, vectorize.args = c("band_width", "inter_band_width"))
-
-
+multi_banded_drift_dep <- Vectorize(multi_banded_drift_dep,vectorize.args = c("band_width","inter_band_width"))
 
 
 #' plot_field
@@ -149,16 +160,50 @@ plot_field <- function(band_width = 1, inter_band_width = 1, z_1 = 1, z_2 = 2, f
 
   ggplot2::ggplot() +
     ggplot2::theme_void() +
-    ggplot2::geom_rect(data = field_position,
-                       ggplot2::aes(xmin = xmin, xmax = xmax,
-                                    ymin = ymin, ymax = ymax),
-                       fill = "sienna", col = "sienna") +
-    ggplot2::geom_rect(data = ditch_position,
-                       ggplot2::aes(xmin = xmin, xmax = xmax,
-                                    ymin = ymin, ymax = ymax),
-                       fill = "turquoise4", col = "turquoise3") +
-    ggplot2::geom_rect(data = band_positions,
-                       ggplot2::aes(xmin = xmin, xmax = xmax,
-                                    ymin = ymin, ymax = ymax),
-                       fill = "seagreen", col = "darkgreen")
+    ggplot2::geom_rect(
+      data = field_position,
+      ggplot2::aes(
+        xmin = xmin, xmax = xmax,
+        ymin = ymin, ymax = ymax
+      ),
+      fill = "sienna", col = "sienna"
+    ) +
+    ggplot2::geom_rect(
+      data = ditch_position,
+      ggplot2::aes(
+        xmin = xmin, xmax = xmax,
+        ymin = ymin, ymax = ymax
+      ),
+      fill = "turquoise4", col = "turquoise3"
+    ) +
+    ggplot2::geom_rect(
+      data = band_positions,
+      ggplot2::aes(
+        xmin = xmin, xmax = xmax,
+        ymin = ymin, ymax = ymax
+      ),
+      fill = "seagreen", col = "darkgreen"
+    )
+}
+
+
+
+default_drift_reference_df <- read_csv("data/focus_sw_drift_values.csv")
+get_params <- function(crop_grouping = "Arable and veg sub 50cm", num_apps = 1, drift_reference_df = default_drift_reference_df) {
+  valid_crops <- drift_reference_df$`Crop grouping` %>% unique()
+
+  if (any(!crop_grouping %in% valid_crops)) {
+    stop(paste0("crop_grouping should be one of:'", paste0(valid_crops, collapse = "', '"), "'"))
+  }
+
+  out <-
+    drift_reference_df %>%
+    dplyr::filter(
+      NumApps == num_apps,
+      `Crop grouping` == crop_grouping
+    )
+  if (nrow(out) != 1) stop(paste0("No drift loadings found for crop: '", crop_grouping, "' and NumApps: '", num_apps, "'"))
+
+  class(out) <- c(class(out), "focussw_drift")
+  return(out)
 }

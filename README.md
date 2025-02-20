@@ -63,7 +63,11 @@ plot all combination all combinations of row/inter from 50cm to 3m at inc of
 Done, see `plotting.R` script
 
 ### Priority 2 
- All Crops and Numapps
+All Crops and Numapps
+
+Not done, all functions now take an object from `get_params`
+needs to have varying z_1 and z_2 based off of tables david sent for pond/ditch/stream
+ and focus crop
 
 ### Prioirty 3 
  Usability for GUI, bake in focus assumptions on dimensions etc
