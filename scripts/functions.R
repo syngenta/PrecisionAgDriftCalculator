@@ -188,7 +188,6 @@ plot_field <- function(band_width = 1, inter_band_width = 1, z_1 = 1, z_2 = 2, f
 
 
 
-default_drift_reference_df <- read_csv("data/focus_sw_drift_values.csv")
 get_params <- function(crop_grouping = "Arable and veg sub 50cm", num_apps = 1, drift_reference_df = default_drift_reference_df) {
   valid_crops <- drift_reference_df$`Crop grouping` %>% unique()
 
