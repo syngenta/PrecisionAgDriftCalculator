@@ -8,7 +8,51 @@
 #
 
 library(shiny)
-source("functions.R")
+
+library(readr)
+library(dplyr)
+library(tibble)
+library(magrittr)
+source("drift_calc_functions.R")
+source("plot_field.R")
+
+# FOCUS SW Appendix B drift parameters
+default_drift_reference_df <- read_csv(
+  "data/focus_sw_drift_values.csv",
+  show_col_types = FALSE
+)
+
+focus_sw_water_body_dim <- read_csv(
+  "data/focus_sw_water_body_dimensions.csv",
+  show_col_types = FALSE
+)
+
+focus_sw_crop_distance <- read_csv(
+  "data/focus_sw_crop_distance_to_bank.csv",
+  show_col_types = FALSE
+)
+
+
+focus_crop_combinations <-
+  expand.grid(
+    Crop = focus_sw_crop_distance$Crop,
+    `water body` = focus_sw_water_body_dim$`water body`
+  ) %>%
+  as_tibble() %>%
+  left_join(focus_sw_water_body_dim) %>%
+  left_join(focus_sw_crop_distance) %>%
+  mutate(
+    z_1 = `distance from crop to top of bank (m)` +
+      `distance from top of bank to water (m)`,
+    z_2 = z_1 + `water width (m)`
+  ) %>%
+  left_join(
+    default_drift_reference_df,
+    by = "Crop grouping",
+    relationship = "many-to-many"
+  )
+
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   # Application title
@@ -22,7 +66,7 @@ ui <- fluidPage(
         inputId = "field_option",
         choices = c("Full Field", "Single Band", "Multi Band", "Regular Spot"),
         label = "Choose a field option",
-        selected = 3
+        selected = "Full Field"
       ),
       h3("Band Info"),
       fluidRow(
@@ -32,6 +76,7 @@ ui <- fluidPage(
             inputId = "band_width",
             label = "Band width (Spray) [m]",
             value = 1,
+            step = 0.1,
             min = 0,
             max = 5
           )
@@ -42,6 +87,7 @@ ui <- fluidPage(
             inputId = "inter_band_width",
             label = "Inter band width (Spray) [m]",
             min = 0,
+            step = 0.1,
             value = 1,
             max = 5
           )
@@ -99,22 +145,134 @@ ui <- fluidPage(
 
     # Show a plot of the generated distribution
     mainPanel(
-      plotOutput("field_plot"),
-      verbatimTextOutput("drift_stats")
+      plotOutput("field_plot", height = 500, width = 500),
+      verbatimTextOutput("drift_stats"),
+      "Drift calculations are done over an infinitly long and 1km deep field",
+      "This is currently just an exploration tool. Not to be used in a real RA"
     )
   )
 )
 
+
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  output$field_plot <- renderPlot({
-    # generate bins based on input$bins from ui.R
-    plot_field()
-  })
+  selected_focus_combination <- reactive(
+    focus_crop_combinations %>%
+      filter(
+        Crop == input$crop,
+        `water body` == stringr::str_to_lower(input$water_body),
+        NumApps == 1
+      ) %>%
+      mutate(
+        z_1 = case_when(
+          input$buffer_m == "No buffer (Step 3)" ~ z_1,
+          input$buffer_m == "5 m" ~ 5,
+          input$buffer_m == "10 m" ~ 10
+        ),
+        z_2 = z_1 + `water width (m)`
+      )
+  )
+
+  output$field_plot <- renderPlot(
+    {
+      validate(
+        need(
+          nrow(selected_focus_combination()) > 0,
+          "Crop and Water Body combinations not defined"
+        )
+      )
+      # print(selected_focus_combination())
+      # generate bins based on input$bins from ui.R
+      if (input$field_option == c("Full Field")) {
+        plot_full_field(
+          z_1 = selected_focus_combination()$z_1,
+          z_2 = selected_focus_combination()$z_2
+        )
+      } else if (input$field_option == "Single Band") {
+        plot_single_band_field(
+          band_width = input$band_width,
+          z_1 = selected_focus_combination()$z_1,
+          z_2 = selected_focus_combination()$z_2
+        )
+      } else if (input$field_option == "Multi Band") {
+        plot_multi_band_field(
+          band_width = input$band_width,
+          inter_band_width = input$inter_band_width,
+          z_1 = selected_focus_combination()$z_1,
+          z_2 = selected_focus_combination()$z_2
+        )
+      } else if (input$field_option == "Regular Spot") {
+        plot_regular_spot_field(
+          band_width = input$band_width,
+          inter_band_width = input$inter_band_width,
+          z_1 = selected_focus_combination()$z_1,
+          z_2 = selected_focus_combination()$z_2
+        )
+      }
+    }
+  )
   output$drift_stats <- renderText({
-    paste0(c(
-      "Mean Drift deposition = 1.9 % of application rate\nPercent Reduction from Full Field application: 45 % reduction"
-    ))
+    validate(
+      need(
+        nrow(selected_focus_combination()) > 0,
+        "Crop and Water Body combinations not defined"
+      )
+    )
+
+    ffd <- full_field_drift(
+      z_1 = selected_focus_combination()$z_1,
+      z_2 = selected_focus_combination()$z_2,
+      A = selected_focus_combination()$A,
+      B = selected_focus_combination()$B,
+      C = selected_focus_combination()$C,
+      D = selected_focus_combination()$D,
+      H = selected_focus_combination()$H
+    )
+
+    if (input$field_option == c("Full Field")) {
+      drift_perc <- ffd
+    } else if (input$field_option == "Single Band") {
+      drift_perc <- single_band_drift(
+        band_width = input$band_width,
+        z_1 = selected_focus_combination()$z_1,
+        z_2 = selected_focus_combination()$z_2,
+        A = selected_focus_combination()$A,
+        B = selected_focus_combination()$B,
+        C = selected_focus_combination()$C,
+        D = selected_focus_combination()$D,
+        H = selected_focus_combination()$H
+      )
+    } else if (input$field_option == "Multi Band") {
+      drift_perc <- multi_banded_drift(
+        band_width = input$band_width,
+        inter_band_width = input$inter_band_width,
+        z_1 = selected_focus_combination()$z_1,
+        z_2 = selected_focus_combination()$z_2,
+        A = selected_focus_combination()$A,
+        B = selected_focus_combination()$B,
+        C = selected_focus_combination()$C,
+        D = selected_focus_combination()$D,
+        H = selected_focus_combination()$H
+      )
+    } else if (input$field_option == "Regular Spot") {
+      drift_perc <- regular_spot_drift(
+        band_width = input$band_width,
+        inter_band_width = input$inter_band_width,
+        z_1 = selected_focus_combination()$z_1,
+        z_2 = selected_focus_combination()$z_2,
+        A = selected_focus_combination()$A,
+        B = selected_focus_combination()$B,
+        C = selected_focus_combination()$C,
+        D = selected_focus_combination()$D,
+        H = selected_focus_combination()$H
+      )
+    }
+
+    perc_reduc <- sprintf("%3.0f", 100 * (1 - drift_perc / ffd))
+    glue::glue(
+      "Mean drift deposition over water body: {sprintf('%.2f',drift_perc)} % of application rate\n",
+      "Percent reduction over full field application: {perc_reduc} % reduction"
+    )
   })
 }
 

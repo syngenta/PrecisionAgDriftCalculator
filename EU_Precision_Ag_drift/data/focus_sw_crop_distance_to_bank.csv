@@ -1,0 +1,21 @@
+﻿Crop,Crop grouping,distance from crop to top of bank (m)
+cereals (not maize),Arable and veg sub 50cm,0.5
+maize,Arable and veg sub 50cm,0.8
+potatoes,Arable and veg sub 50cm,0.8
+sugar beet,Arable and veg sub 50cm,0.8
+oil seed rape,Arable and veg sub 50cm,0.5
+sunflower,Arable and veg sub 50cm,0.8
+soybean,Arable and veg sub 50cm,0.8
+tobacco,Arable and veg sub 50cm,1
+hops,Hops,3
+vegetables,Arable and veg sub 50cm,0.5
+"pome/stone fruit, early applns",Pome early,3
+"pome/stone fruit, late applns",Pome late,3
+citrus,Pome late,3
+"vines, early applns",Vines early,3
+"vines, late applns",Vines late and veg over 50cm,3
+olives,Pome late,3
+aerial application,Aerial,5
+Field beans,Arable and veg sub 50cm,0.8
+Cotton,Arable and veg sub 50cm,0.8
+Legumes,Arable and veg sub 50cm,0.8
