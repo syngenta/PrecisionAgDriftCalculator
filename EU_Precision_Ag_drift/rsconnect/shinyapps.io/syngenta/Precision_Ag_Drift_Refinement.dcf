@@ -1,0 +1,12 @@
+name: Precision_Ag_Drift_Refinement
+title: Precision_Ag_Drift_Refinement
+username: syngenta
+account: syngenta
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14864656
+bundleId: 10381907
+url: https://syngenta.shinyapps.io/Precision_Ag_Drift_Refinement/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

@@ -1,4 +1,4 @@
-# BandedDrift
+# Banded Drift - Precision Ag Drift Method
 
 Michael Bird and David Patterson
 
@@ -15,17 +15,17 @@ Imagine a ditch that is one meter downwind of a field of wheat. For now, assume
 the field is long and wide and that the water body runs along the entire edge of
 the field.
 
-If a boom sprayer sprays up to the edge of the wheeat, we can uese FOCUS SW 
+If a boom sprayer sprays up to the edge of the wheat, we can use FOCUS SW 
 drift curves to calculate:
 
   - The deposition curve over the ditch
   - The total deposition in the water body assuming we know the ditch width and
     the PPP application rate
 
-If a boom sprayer moved itself 1m into the field (i.e) a 1m crop buffer, we 
+If a boom sprayer moved itself 1m into the field (i.e) a 1 m crop buffer, we 
 could similarly calculate deposition curve. The idea is that if you subtracted
-the 1m curve from the edge of field curve, you would be left with the drift that
-resulted from spraying the 1m wide strip from field edge into the field.
+the 1 m curve from the edge of field curve, you would be left with the drift that
+resulted from spraying the 1 m wide strip from field edge into the field.
 
 There is the potential to use this idea to refine drift depositions for banded 
 applications where bands run parallel to the ditch
@@ -63,6 +63,7 @@ plot all combination all combinations of row/inter from 50cm to 3m at inc of
 Done, see `plotting.R` script
 
 ### Priority 2 
+
 All Crops and Numapps
 
 Not done, all functions now take an object from `get_params`
@@ -70,9 +71,11 @@ needs to have varying z_1 and z_2 based off of tables david sent for pond/ditch/
  and focus crop
 
 ### Prioirty 3 
+
  Usability for GUI, bake in focus assumptions on dimensions etc
 
 ### Think about 
+
   - "I have a map of treatments for square field, how would you translate that to 
      this methodology"
   - "parallel vs perpendicular"

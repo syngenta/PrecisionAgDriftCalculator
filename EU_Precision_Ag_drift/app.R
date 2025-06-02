@@ -56,7 +56,7 @@ focus_crop_combinations <-
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   # Application title
-  titlePanel("Precision Ag Drift refinement"),
+  titlePanel("Precision Ag Drift Refinement"),
 
   # Sidebar with a slider input for number of bins
   sidebarLayout(
@@ -85,7 +85,7 @@ ui <- fluidPage(
           width = 6,
           shiny::numericInput(
             inputId = "inter_band_width",
-            label = "Inter band width (Spray) [m]",
+            label = "Inter band width (No Spray) [m]",
             min = 0,
             step = 0.1,
             value = 1,
@@ -148,7 +148,7 @@ ui <- fluidPage(
       plotOutput("field_plot", height = 500, width = 500),
       verbatimTextOutput("drift_stats"),
       "Drift calculations are done over an infinitly long and 1km deep field",
-      "This is currently just an exploration tool. Not to be used in a real RA"
+      "This is currently just an exploration tool developed by Michael Bird at Syngenta. Not to be used in a real RA ... yet"
     )
   )
 )
