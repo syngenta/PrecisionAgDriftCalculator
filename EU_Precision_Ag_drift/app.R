@@ -176,7 +176,13 @@ ui <- fluidPage(
       # Text below field plot
       verbatimTextOutput("drift_stats"),
       "Drift calculations are done over an infinitly long and 1km deep field",
-      "This is currently just an exploration tool developed by Michael Bird at Syngenta. Not to be used in a real RA ... yet"
+      "This is currently just an exploration tool developed by Michael Bird at Syngenta. Not to be used in a real RA ... yet",
+      br(),
+      "Confused? Check out the Github for source code and documention:",
+      tagList(a(
+        "Github Link",
+        href = "https://github.com/syngenta/PrecisionAgDriftCalculator/"
+      ))
     )
   )
 )

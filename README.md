@@ -38,6 +38,8 @@ applications where bands run parallel to the ditch
    - Copies of the original regression parameters for FOCUS SW
    - Rautmann paper
    - A powerpoint file with some visuals
+   - A copy of the powerpoint David and Michael presented at the GB Fate Modelling
+     forum explaining the method.
   - `data` contains csvs on:
    - focus water body dimensions
    - focus sw drift curve regression parameters
