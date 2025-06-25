@@ -1,38 +1,53 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
+# What ----
 
-library(shiny)
+# Source code for a banded application drift calculator.
+#
+# This app implements the methods presented by Michael Bird and David Patterson
+# at the inaugural GB Fate modelling forum. Some detail about the method are
+# found in the github readme. Further details, are available on request.
 
-library(readr)
-library(dplyr)
-library(tibble)
-library(magrittr)
+# Packages ----
+library(shiny) # Webapp creation
+library(readr) # For reading csvs containing constants
+library(dplyr) # Data manipulation
+library(tibble) # Data manipulation
+library(magrittr) # piping function
+
+# Functions ----
+#Functions for calculating spray drift as percentage of app rate. Contains
+#functions for:
+# - Full field
+# - Single band
+# - Multi band (parallel banded application covering field)
+# - Regular spot application
 source("drift_calc_functions.R")
+#functions that create ggplot objects representing the above scenarios for
+#visual plotting
 source("plot_field.R")
 
+# Data ----
 # FOCUS SW Appendix B drift parameters
 default_drift_reference_df <- read_csv(
   "data/focus_sw_drift_values.csv",
   show_col_types = FALSE
 )
 
+#Dimensions of FOCUS SW bodies
 focus_sw_water_body_dim <- read_csv(
   "data/focus_sw_water_body_dimensions.csv",
   show_col_types = FALSE
 )
 
+# Distance from crop to bank according to FOCUS SW
 focus_sw_crop_distance <- read_csv(
   "data/focus_sw_crop_distance_to_bank.csv",
   show_col_types = FALSE
 )
 
-
+# 1. Combine crop and SW body combinations
+# 2. Calculate z_1 and z_2 for each crop and wb combinations
+# 3. Join with drift parameters so that each row of `focus_crop_combinations`
+#    uniquely represents a crop, water body, and number of applications
 focus_crop_combinations <-
   expand.grid(
     Crop = focus_sw_crop_distance$Crop,
@@ -52,15 +67,16 @@ focus_crop_combinations <-
     relationship = "many-to-many"
   )
 
-
-# Define UI for application that draws a histogram
+#UI ----
+# Define UI for application
 ui <- fluidPage(
   # Application title
   titlePanel("Precision Ag Drift Refinement"),
 
-  # Sidebar with a slider input for number of bins
+  # Sidebar
   sidebarLayout(
     sidebarPanel(
+      #Options for field set up
       h3("Spray Setup"),
       shiny::radioButtons(
         inputId = "field_option",
@@ -68,6 +84,8 @@ ui <- fluidPage(
         label = "Choose a field option",
         selected = "Full Field"
       ),
+
+      #Information on Band geometry
       h3("Band Info"),
       fluidRow(
         column(
@@ -93,6 +111,10 @@ ui <- fluidPage(
           )
         )
       ),
+
+      # Crop and Water body selection. Currently hard coded for FOCUS SW and
+      # relies on these matching the rows in `focus_crop_combinations`: not good
+      # for long term but fine for now.
       h3("Field Info"),
       fluidRow(
         column(
@@ -124,6 +146,8 @@ ui <- fluidPage(
             selected = 1
           )
         ),
+        #Note that for UI, these are in Title case. Server side, these are modified
+        #to lower case
         column(
           width = 6,
           selectInput(
@@ -134,18 +158,22 @@ ui <- fluidPage(
           )
         )
       ),
+
+      # Add in buffer lengths
       h3("Mitigation info"),
       selectInput(
         inputId = "buffer_m",
         label = "Add a spray buffer",
-        choices = c("No buffer (Step 3)", "5 m", "10 m"),
+        choices = c("No buffer (Step 3)", "5 m", "10 m", "20 m", "30 m"),
         selected = 1
       )
     ),
 
-    # Show a plot of the generated distribution
+    # main (right side) panel
     mainPanel(
+      # Show a plot of the generated field
       plotOutput("field_plot", height = 500, width = 500),
+      # Text below field plot
       verbatimTextOutput("drift_stats"),
       "Drift calculations are done over an infinitly long and 1km deep field",
       "This is currently just an exploration tool developed by Michael Bird at Syngenta. Not to be used in a real RA ... yet"
@@ -153,9 +181,13 @@ ui <- fluidPage(
   )
 )
 
-
-# Define server logic required to draw a histogram
+# Server ----
+#Back end server function
 server <- function(input, output) {
+  #Take user inputs on crop, water body, and buffer: then filter the full
+  #combinations of regression parameters down to a single line based off of
+  #user selections. This reactive variable is recalculated every time a user
+  #changes one of the mentioned inputs
   selected_focus_combination <- reactive(
     focus_crop_combinations %>%
       filter(
@@ -167,22 +199,27 @@ server <- function(input, output) {
         z_1 = case_when(
           input$buffer_m == "No buffer (Step 3)" ~ z_1,
           input$buffer_m == "5 m" ~ 5,
-          input$buffer_m == "10 m" ~ 10
+          input$buffer_m == "10 m" ~ 10,
+          input$buffer_m == "20 m" ~ 20,
+          input$buffer_m == "30 m" ~ 30
         ),
         z_2 = z_1 + `water width (m)`
       )
   )
 
+  # Plot the field visually
   output$field_plot <- renderPlot(
     {
+      #first check inputs are valid
       validate(
         need(
           nrow(selected_focus_combination()) > 0,
           "Crop and Water Body combinations not defined"
         )
       )
-      # print(selected_focus_combination())
-      # generate bins based on input$bins from ui.R
+      #for each field option, call a different plotting function.
+      #This is not particularly flexible but it's very easy to read and understand
+
       if (input$field_option == c("Full Field")) {
         plot_full_field(
           z_1 = selected_focus_combination()$z_1,
@@ -211,7 +248,10 @@ server <- function(input, output) {
       }
     }
   )
+  #This text appears under the field picture and displays the drift percentage
+  #as well as the reduction in drift from full field drift
   output$drift_stats <- renderText({
+    #input validations
     validate(
       need(
         nrow(selected_focus_combination()) > 0,
@@ -219,6 +259,7 @@ server <- function(input, output) {
       )
     )
 
+    #full field drift calculation for this crop/water body/buffer
     ffd <- full_field_drift(
       z_1 = selected_focus_combination()$z_1,
       z_2 = selected_focus_combination()$z_2,
@@ -229,7 +270,9 @@ server <- function(input, output) {
       H = selected_focus_combination()$H
     )
 
+    #for any field option, calculate drift percentage
     if (input$field_option == c("Full Field")) {
+      #already calculated
       drift_perc <- ffd
     } else if (input$field_option == "Single Band") {
       drift_perc <- single_band_drift(
@@ -268,6 +311,7 @@ server <- function(input, output) {
       )
     }
 
+    # format percent reduction nicely
     perc_reduc <- sprintf("%3.0f", 100 * (1 - drift_perc / ffd))
     glue::glue(
       "Mean drift deposition over water body: {sprintf('%.2f',drift_perc)} % of application rate\n",
